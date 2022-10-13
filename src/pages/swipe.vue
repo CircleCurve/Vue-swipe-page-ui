@@ -57,12 +57,14 @@ const matchInLeagues = computed(() => {
 const leaguePosition = ref({
   currPos: 1,
   newPos: 1,
+  offset: 0,
 })
 
-const movePercentage = computed(() => (leaguePosition.value.currPos - leaguePosition.value.newPos) * 100)
+const movePercentage = computed(() => (leaguePosition.value.currPos - leaguePosition.value.newPos) * 100 + leaguePosition.value.offset)
 
 const moveLeague = (leagueId) => {
   leaguePosition.value.newPos = leagueId
+  leaguePosition.value.offset = 0
 }
 
 const slidePosition = ref(0)
@@ -72,6 +74,32 @@ const slideToLeft = () => {
 
 const slideToRight = () => {
   slidePosition.value -= 20
+}
+
+// handle drag
+
+const startDrag = (event) => {
+  console.log('onMouseDown :', event)
+  const currPos = { x: event.clientX, y: event.clientY, width: event.target.offsetWidth }
+  console.log('currPos : ', currPos)
+  document.onmousemove = (evt) => {
+    evt.preventDefault()
+    const offset = evt.clientX - currPos.x
+    const direction = offset < 0 ? 'left' : 'right'
+    const movePercentage = offset / currPos.width * 100
+    leaguePosition.value.offset = movePercentage
+    console.log('OffetX : ', evt.offsetX, '  CurrPos.X : ', currPos.x, ', NewPos.X :', evt.clientX, '  Move offset :', offset, ' Direction:', direction, ' Move percentage :', movePercentage)
+  }
+  document.onmouseup = (evt) => {
+    console.log('Mouse up! :', evt)
+    const offset = evt.clientX - currPos.x
+    const movePercentage = offset / currPos.width * 100
+    if (movePercentage <= -60)
+      moveLeague(2)
+
+    document.onmouseup = null
+    document.onmousemove = null
+  }
 }
 </script>
 
@@ -103,7 +131,7 @@ const slideToRight = () => {
 
     <div class="w-80 center red-border ">
       <div class="flex slide" :style="{ transform: `translate(${movePercentage}%)` }">
-        <div v-for="matchInLeague in matchInLeagues" :key="matchInLeague.id" class="flex-w-100 blue-border">
+        <div v-for="matchInLeague in matchInLeagues" :key="matchInLeague.id" class="flex-w-100 blue-border" @mousedown="startDrag($event)">
           <div v-for="match in matchInLeague.matches" :key="match.id">
             {{ match.name }}
           </div>
@@ -176,6 +204,6 @@ const slideToRight = () => {
 
   .slide {
     transform: translateX(0%) ;
-    transition: transform 0.3s;
+    /*transition: transform 0.3s;*/
   }
 </style>
