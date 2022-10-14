@@ -94,7 +94,7 @@ const startDrag = (event) => {
     const movePercentage = offset / currPos.width * 100
     pageSettings.value.offset = movePercentage
     pageSettings.value.isAnimated = false
-    // console.log('OffetX : ', evt.offsetX, '  CurrPos.X : ', currPos.x, ', NewPos.X :', evt.clientX, '  Move offset :', offset, ' Direction:', direction, ' Move percentage :', movePercentage)
+    console.log('OffetX : ', evt.offsetX, '  CurrPos.X : ', currPos.x, ', NewPos.X :', evt.clientX, '  Move offset :', offset, ' Direction:', direction, ' Move percentage :', movePercentage)
   }
   document.onmouseup = (evt) => {
     document.onmouseup = null
