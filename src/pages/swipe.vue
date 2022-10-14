@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const images = ref([
   { id: 1, name: 'Image 1', href: 'https://cms-assets.tutsplus.com/uploads/users/1191/profiles/19701/profileImage/ngc2237_400.jpg' },
@@ -53,20 +53,6 @@ const matchInLeagues = computed(() => {
   ))
 },
 )
-
-const leaguePosition = ref({
-  currPos: 1,
-  newPos: 1,
-  offset: 0,
-})
-
-const movePercentage = computed(() => (leaguePosition.value.currPos - leaguePosition.value.newPos) * 100 + leaguePosition.value.offset)
-
-const moveLeague = (leagueId) => {
-  leaguePosition.value.newPos = leagueId
-  leaguePosition.value.offset = 0
-}
-
 const slidePosition = ref(0)
 const slideToLeft = () => {
   slidePosition.value += 20
@@ -74,6 +60,25 @@ const slideToLeft = () => {
 
 const slideToRight = () => {
   slidePosition.value -= 20
+}
+// page related
+const pageSettings = ref({
+  initalPage: 1,
+  currentPage: 1,
+  maxPage: 1,
+  offset: 0,
+  isAnimated: true,
+})
+
+watch(matchInLeagues, (val) => {
+  pageSettings.value.maxPage = val.length
+}, { immediate: true })
+
+const movePercentage = computed(() => (pageSettings.value.initalPage - pageSettings.value.currentPage) * 100 + pageSettings.value.offset)
+
+const movePage = (page) => {
+  pageSettings.value.currentPage = page
+  pageSettings.value.offset = 0
 }
 
 // handle drag
@@ -87,18 +92,22 @@ const startDrag = (event) => {
     const offset = evt.clientX - currPos.x
     const direction = offset < 0 ? 'left' : 'right'
     const movePercentage = offset / currPos.width * 100
-    leaguePosition.value.offset = movePercentage
-    console.log('OffetX : ', evt.offsetX, '  CurrPos.X : ', currPos.x, ', NewPos.X :', evt.clientX, '  Move offset :', offset, ' Direction:', direction, ' Move percentage :', movePercentage)
+    pageSettings.value.offset = movePercentage
+    pageSettings.value.isAnimated = false
+    // console.log('OffetX : ', evt.offsetX, '  CurrPos.X : ', currPos.x, ', NewPos.X :', evt.clientX, '  Move offset :', offset, ' Direction:', direction, ' Move percentage :', movePercentage)
   }
   document.onmouseup = (evt) => {
-    console.log('Mouse up! :', evt)
-    const offset = evt.clientX - currPos.x
-    const movePercentage = offset / currPos.width * 100
-    if (movePercentage <= -60)
-      moveLeague(2)
-
     document.onmouseup = null
     document.onmousemove = null
+
+    pageSettings.value.isAnimated = true
+    const offset = evt.clientX - currPos.x
+    const direction = offset < 0 ? 1 : -1
+    const movePercentage = Math.abs(offset) / currPos.width * 100
+
+    let nextPage = (movePercentage >= 50) ? pageSettings.value.currentPage + direction : pageSettings.value.currentPage
+    nextPage = nextPage < 1 || nextPage > pageSettings.value.maxPage ? pageSettings.value.currentPage : nextPage
+    movePage(nextPage)
   }
 }
 </script>
@@ -106,7 +115,7 @@ const startDrag = (event) => {
 <template>
   <section class="margin-x-16">
     <div class="w-80 center red-border hidden">
-      <div class="flex slide" :style="{ transform: `translate(${slidePosition}%)` }">
+      <div class="flex slide animate-transform" :style="{ transform: `translate(${slidePosition}%)` }">
         <div v-for="image in images" :key="image.id" class="flex-w-20 blue-border">
           <img class="w-100 image-cover" :src="image.href">
         </div>
@@ -124,13 +133,13 @@ const startDrag = (event) => {
 
   <section>
     <div class="center w-80 flex justify-content-center">
-      <div v-for="league in leagues" :key="league.id" class="padding-16 cursor green-border margin-y-16" @click="moveLeague(league.id)">
+      <div v-for="league in leagues" :key="league.id" class="padding-16 cursor green-border margin-y-16" @click="movePage(league.id)">
         {{ league.name }}
       </div>
     </div>
 
     <div class="w-80 center red-border ">
-      <div class="flex slide" :style="{ transform: `translate(${movePercentage}%)` }">
+      <div class="flex slide" :class="{ 'animate-transform': pageSettings.isAnimated }" :style="{ transform: `translate(${movePercentage}%)` }">
         <div v-for="matchInLeague in matchInLeagues" :key="matchInLeague.id" class="flex-w-100 blue-border" @mousedown="startDrag($event)">
           <div v-for="match in matchInLeague.matches" :key="match.id">
             {{ match.name }}
@@ -204,6 +213,9 @@ const startDrag = (event) => {
 
   .slide {
     transform: translateX(0%) ;
-    /*transition: transform 0.3s;*/
+  }
+
+  .animate-transform {
+    transition: transform 0.3s;
   }
 </style>
